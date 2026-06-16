@@ -12,6 +12,7 @@ const App = (() => {
         try {
             const data = {
                 blocks: state.blocks,
+                globalConfig: GlobalConfig.getConfig(),
                 savedAt: Date.now()
             };
             localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
@@ -28,6 +29,7 @@ const App = (() => {
             if (!data || !Array.isArray(data.blocks)) return null;
             return {
                 blocks: data.blocks,
+                globalConfig: data.globalConfig || null,
                 selectedId: null,
                 selectedColId: null
             };
@@ -51,6 +53,16 @@ const App = (() => {
             };
         }
 
+        if (initialState && initialState.globalConfig) {
+            GlobalConfig.init(initialState.globalConfig, {
+                onChange: onGlobalConfigChange
+            });
+        } else {
+            GlobalConfig.init(null, {
+                onChange: onGlobalConfigChange
+            });
+        }
+
         LayoutManager.init(initialState, {
             onChange: onStateChange,
             onSelect: onSelectChange
@@ -62,6 +74,8 @@ const App = (() => {
         bindGlobalEvents();
         renderEditor();
         PreviewRenderer.render(initialState.blocks);
+        PreviewRenderer.updateIframeWidthForView('desktop');
+        renderProperties();
     }
 
     function onStateChange(state) {
@@ -74,6 +88,14 @@ const App = (() => {
     function onSelectChange(blockId, colId) {
         renderEditor();
         renderProperties();
+    }
+
+    function onGlobalConfigChange(config) {
+        const state = LayoutManager.getState();
+        saveStateToStorage(state);
+        PreviewRenderer.scheduleRender(state.blocks, config.breakpoint);
+        PreviewRenderer.updateIframeWidthForView(PreviewRenderer.getView());
+        updateViewToggleButtons();
     }
 
     function renderComponentList() {
@@ -560,7 +582,8 @@ const App = (() => {
         const state = LayoutManager.getState();
 
         if (!state.selectedId && !state.selectedColId) {
-            container.innerHTML = '<p class="empty-hint">点击组件编辑属性</p>';
+            container.innerHTML = renderGlobalProperties();
+            bindGlobalPropertiesEvents(container);
             return;
         }
 
@@ -605,6 +628,37 @@ const App = (() => {
         } else {
             bindFieldEvents(container, block.id, null, null);
         }
+    }
+
+    function renderGlobalProperties() {
+        const breakpoint = GlobalConfig.getBreakpoint();
+        const minBp = GlobalConfig.getMinBreakpoint();
+        const maxBp = GlobalConfig.getMaxBreakpoint();
+
+        return '<h4 style="margin-bottom:8px;color:#374151;">⚙️ 全局设置</h4>' +
+            '<div class="global-settings-section">' +
+                '<div class="form-group">' +
+                    '<label for="global-breakpoint-slider">响应式断点 (px)</label>' +
+                    '<div class="breakpoint-slider-wrapper">' +
+                        '<input type="range" id="global-breakpoint-slider" class="breakpoint-slider" ' +
+                            'min="' + minBp + '" max="' + maxBp + '" value="' + breakpoint + '" step="1">' +
+                    '</div>' +
+                    '<div class="breakpoint-input-row">' +
+                        '<input type="number" id="global-breakpoint-input" class="breakpoint-input" ' +
+                            'min="' + minBp + '" max="' + maxBp + '" value="' + breakpoint + '">' +
+                        '<span class="breakpoint-unit">px</span>' +
+                    '</div>' +
+                    '<div class="breakpoint-hint">' +
+                        '<span>最小: ' + minBp + 'px</span>' +
+                        '<span>默认: 600px</span>' +
+                        '<span>最大: ' + maxBp + 'px</span>' +
+                    '</div>' +
+                '</div>' +
+                '<div class="breakpoint-description">' +
+                    '<p>当视口宽度<strong>小于等于</strong>断点值时，邮件模板将使用移动端布局样式。</p>' +
+                    '<p style="margin-top:6px;">拖动滑块可实时预览不同断点下的效果。</p>' +
+                '</div>' +
+            '</div>';
     }
 
     function renderColumnProperties(colId) {
@@ -706,6 +760,69 @@ const App = (() => {
                     }
                 });
             }
+        });
+    }
+
+    function bindGlobalPropertiesEvents(container) {
+        const slider = container.querySelector('#global-breakpoint-slider');
+        const input = container.querySelector('#global-breakpoint-input');
+
+        if (slider) {
+            slider.addEventListener('mousedown', function() {
+                PreviewRenderer.startDragging();
+            });
+
+            slider.addEventListener('input', function(e) {
+                const value = parseInt(e.target.value, 10);
+                if (input) input.value = value;
+                PreviewRenderer.setIframeWidth(value);
+                GlobalConfig.setBreakpoint(value);
+            });
+
+            slider.addEventListener('change', function() {
+                PreviewRenderer.resetIframeWidth();
+                updateViewToggleButtons();
+            });
+
+            slider.addEventListener('mouseup', function() {
+                PreviewRenderer.resetIframeWidth();
+                updateViewToggleButtons();
+            });
+        }
+
+        if (input) {
+            input.addEventListener('input', function(e) {
+                let value = parseInt(e.target.value, 10);
+                if (isNaN(value)) return;
+
+                const minBp = GlobalConfig.getMinBreakpoint();
+                const maxBp = GlobalConfig.getMaxBreakpoint();
+                value = Math.max(minBp, Math.min(maxBp, value));
+
+                if (slider) slider.value = value;
+                GlobalConfig.setBreakpoint(value);
+            });
+
+            input.addEventListener('blur', function(e) {
+                let value = parseInt(e.target.value, 10);
+                if (isNaN(value)) {
+                    value = GlobalConfig.getBreakpoint();
+                }
+                const minBp = GlobalConfig.getMinBreakpoint();
+                const maxBp = GlobalConfig.getMaxBreakpoint();
+                value = Math.max(minBp, Math.min(maxBp, value));
+                e.target.value = value;
+                if (slider) slider.value = value;
+                GlobalConfig.setBreakpoint(value);
+                PreviewRenderer.updateIframeWidthForView(PreviewRenderer.getView());
+            });
+        }
+    }
+
+    function updateViewToggleButtons() {
+        const currentView = PreviewRenderer.getView();
+        document.querySelectorAll('.btn-toggle').forEach(function(btn) {
+            btn.classList.toggle('active', btn.dataset.view === currentView);
         });
     }
 

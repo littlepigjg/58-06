@@ -156,6 +156,7 @@ const TemplateEngine = (() => {
         var bgColor = options.backgroundColor || '#f3f4f6';
         var contentBgColor = options.contentBgColor || '#ffffff';
         var title = options.title || '邮件模板';
+        var breakpoint = options.breakpoint || 600;
         var year = new Date().getFullYear();
 
         return '<!DOCTYPE html>\n' +
@@ -183,7 +184,7 @@ const TemplateEngine = (() => {
 '        table { border-collapse: collapse !important; mso-table-lspace: 0pt !important; mso-table-rspace: 0pt !important; }\n' +
 '        .ExternalClass, .ExternalClass p, .ExternalClass span, .ExternalClass font, .ExternalClass td, .ExternalClass div { line-height: 100%; }\n' +
 '        .yshortcuts a { border-bottom: none !important; }\n' +
-'        @media only screen and (max-width: 600px) {\n' +
+'        @media only screen and (max-width: ' + breakpoint + 'px) {\n' +
 '            .mj-column-per-100 { width: 100% !important; max-width: 100% !important; }\n' +
 '            table[class="mj-column-per-100"] { width: 100% !important; }\n' +
 '        }\n' +
@@ -193,7 +194,7 @@ const TemplateEngine = (() => {
 '    <table border="0" cellpadding="0" cellspacing="0" width="100%" bgcolor="' + bgColor + '" style="background-color:' + bgColor + ';">\n' +
 '        <tr>\n' +
 '            <td align="center" style="padding:20px 0;">\n' +
-'                <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width:600px;">\n' +
+'                <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width:' + breakpoint + 'px;">\n' +
 '                    <tr>\n' +
 '                        <td align="center" style="padding:0 10px;">\n' +
 '                            <table border="0" cellpadding="0" cellspacing="0" width="100%" bgcolor="' + contentBgColor + '" style="background-color:' + contentBgColor + ';border-radius:8px;overflow:hidden;">\n' +
@@ -202,7 +203,7 @@ const TemplateEngine = (() => {
 '                        </td>\n' +
 '                    </tr>\n' +
 '                </table>\n' +
-'                <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width:600px;">\n' +
+'                <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width:' + breakpoint + 'px;">\n' +
 '                    <tr>\n' +
 '                        <td align="center" style="padding:20px 10px;font-size:12px;color:#9ca3af;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Arial,sans-serif;">\n' +
 '                            &copy; ' + year + ' 邮件模板 &nbsp;|&nbsp; 由邮件模板编辑器生成\n' +

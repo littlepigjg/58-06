@@ -13,16 +13,18 @@ const IOManager = (() => {
     }
 
     function exportHtml(blocks) {
-        const html = TemplateEngine.renderFullHtml(blocks);
+        const breakpoint = GlobalConfig.getBreakpoint();
+        const html = TemplateEngine.renderFullHtml(blocks, { breakpoint: breakpoint });
         const filename = 'email-template-' + Date.now() + '.html';
         triggerDownload(html, filename, 'text/html;charset=utf-8');
     }
 
     function exportJson(state) {
         const data = {
-            version: '1.0',
+            version: '1.1',
             createdAt: new Date().toISOString(),
-            blocks: state.blocks
+            blocks: state.blocks,
+            globalConfig: GlobalConfig.getConfig()
         };
         const json = JSON.stringify(data, null, 2);
         const filename = 'email-template-' + Date.now() + '.json';
@@ -46,6 +48,9 @@ const IOManager = (() => {
                     if (!data.blocks || !Array.isArray(data.blocks)) {
                         reject(new Error('JSON格式不正确：缺少blocks数组'));
                         return;
+                    }
+                    if (data.globalConfig) {
+                        GlobalConfig.setConfig(data.globalConfig);
                     }
                     resolve(data);
                 } catch (err) {
